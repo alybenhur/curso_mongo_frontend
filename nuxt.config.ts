@@ -15,15 +15,18 @@ export default defineNuxtConfig({
     public: 'public',
   },
 
+  // CSS global — cargado en <head> tanto en SSR como en cliente
+  css: ['~/assets/css/main.css'],
 
   modules: [
     '@pinia/nuxt',
     '@vueuse/nuxt',
   ],
 
+  // apiBase se puede sobreescribir con la variable de entorno NUXT_PUBLIC_API_BASE
   runtimeConfig: {
     public: {
-      apiBase: 'http://localhost:3001/api',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001/api',
     },
   },
 
@@ -35,8 +38,22 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       ],
+      link: [
+        // Fuentes de Google para mejor tipografía
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
+        },
+      ],
     },
   },
 
-
+  // Necesario para que el build de producción incluya bien el CSS
+  vite: {
+    css: {
+      devSourcemap: true,
+    },
+  },
 })

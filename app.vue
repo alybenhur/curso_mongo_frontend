@@ -25,5 +25,5 @@ const isDefaultLayout = computed(() =>
 </script>
 
 <style>
-@import '~/assets/css/main.css';
+/* El CSS global se carga desde nuxt.config.ts → css: ['~/assets/css/main.css'] */
 </style>
