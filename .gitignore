@@ -1,0 +1,40 @@
+# ── Build y generados por Nuxt ────────────────────────────────────────────────
+.output/
+.data/
+.nuxt/
+.nitro/
+.cache/
+dist/
+
+# ── Dependencias ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Variables de entorno (NUNCA subir al repo) ─────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── IDEs y editores ───────────────────────────────────────────────────────────
+.vscode/
+.fleet/
+.idea/
+*.suo
+*.sw?
+
+# ── Sistema operativo ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Vite / análisis de bundle ────────────────────────────────────────────────
+*.local
+.nuxt/analyze/
+
