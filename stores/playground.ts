@@ -25,6 +25,12 @@ export interface Snippet {
   code: string
 }
 
+export interface AtlasStatus {
+  configured: boolean
+  connected: boolean
+  dbName: string | null
+}
+
 export const usePlaygroundStore = defineStore('playground', {
   state: () => ({
     query: '// Escribe tu query MongoDB aquí\n// Ctrl+Enter para ejecutar\n\ndb.miColeccion.find()',
@@ -32,13 +38,66 @@ export const usePlaygroundStore = defineStore('playground', {
     history: [] as QueryHistoryItem[],
     collections: [] as string[],
     snippets: [] as Snippet[],
-    sandboxInfo: null as { sandboxDb: string; message: string } | null,
+    sandboxInfo: null as { dbName: string; message: string } | null,
+    atlasStatus: null as AtlasStatus | null,
     executing: false,
+    savingUri: false,
     error: null as string | null,
     activeStage: 1,
   }),
 
+  getters: {
+    /** true cuando el estudiante no tiene Atlas configurado */
+    needsAtlasSetup: (state): boolean =>
+      state.atlasStatus !== null && !state.atlasStatus.configured,
+  },
+
   actions: {
+    // ── Atlas URI ──────────────────────────────────────────────────────────
+
+    async checkAtlasStatus() {
+      const { apiFetch } = useApi()
+      try {
+        this.atlasStatus = await apiFetch<AtlasStatus>('/users/me/atlas-uri/status')
+      } catch {
+        this.atlasStatus = { configured: false, connected: false, dbName: null }
+      }
+    },
+
+    async saveAtlasUri(uri: string): Promise<{ dbName: string }> {
+      const { apiFetch } = useApi()
+      this.savingUri = true
+      this.error = null
+      try {
+        const res = await apiFetch<{ dbName: string }>('/users/me/atlas-uri', {
+          method: 'POST',
+          body: { uri },
+        })
+        // Invalidar cache de conexión anterior y refrescar estado
+        this.atlasStatus = { configured: true, connected: true, dbName: res.dbName }
+        this.sandboxInfo = { dbName: res.dbName, message: 'Conectado a tu MongoDB Atlas' }
+        return res
+      } catch (err: any) {
+        this.error = err?.data?.message || 'No se pudo conectar a Atlas'
+        throw err
+      } finally {
+        this.savingUri = false
+      }
+    },
+
+    async removeAtlasUri() {
+      const { apiFetch } = useApi()
+      try {
+        await apiFetch('/users/me/atlas-uri', { method: 'DELETE' })
+        this.atlasStatus = { configured: false, connected: false, dbName: null }
+        this.sandboxInfo = null
+        this.collections = []
+        this.result = null
+      } catch { /* silencioso */ }
+    },
+
+    // ── Playground ─────────────────────────────────────────────────────────
+
     async execute(stageOrder?: number) {
       const { apiFetch } = useApi()
       if (!this.query.trim()) return
@@ -49,7 +108,6 @@ export const usePlaygroundStore = defineStore('playground', {
           method: 'POST',
           body: { query: this.query, stageOrder: stageOrder ?? this.activeStage },
         })
-        // Refrescar colecciones y historial
         await Promise.all([this.fetchCollections(), this.fetchHistory()])
       } catch (err: any) {
         this.error = err?.data?.message || 'Error al ejecutar la query'
@@ -96,16 +154,8 @@ export const usePlaygroundStore = defineStore('playground', {
       } catch { /* silencioso */ }
     },
 
-    loadSnippet(code: string) {
-      this.query = code
-    },
-
-    loadFromHistory(item: QueryHistoryItem) {
-      this.query = item.query
-    },
-
-    clearResult() {
-      this.result = null
-    },
+    loadSnippet(code: string) { this.query = code },
+    loadFromHistory(item: QueryHistoryItem) { this.query = item.query },
+    clearResult() { this.result = null },
   },
 })

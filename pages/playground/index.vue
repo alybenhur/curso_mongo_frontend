@@ -1,12 +1,74 @@
 <template>
   <div class="playground-page">
 
+    <!-- ── Modal configuración Atlas ───────────────────────────────────────── -->
+    <div v-if="showAtlasSetup" class="modal-overlay">
+      <div class="modal atlas-modal">
+        <div class="atlas-modal-header">
+          <span class="atlas-icon">🍃</span>
+          <div>
+            <h3>Conecta tu MongoDB Atlas</h3>
+            <p>El Playground ejecuta las queries en tu propia base de datos Atlas.</p>
+          </div>
+        </div>
+
+        <div class="atlas-steps">
+          <div class="atlas-step">
+            <span class="step-num">1</span>
+            <span>Ve a <strong>cloud.mongodb.com</strong> y crea una cuenta gratuita (M0 — 512 MB gratis)</span>
+          </div>
+          <div class="atlas-step">
+            <span class="step-num">2</span>
+            <span>Crea un cluster → en <strong>Connect</strong> elige <em>Drivers</em> → copia la URI</span>
+          </div>
+          <div class="atlas-step">
+            <span class="step-num">3</span>
+            <span>En <strong>Network Access</strong> añade <code>0.0.0.0/0</code> para permitir conexiones</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>URI de conexión</label>
+          <input
+            v-model="atlasUri"
+            type="text"
+            placeholder="mongodb+srv://usuario:contraseña@cluster0.mongodb.net/mibd"
+            class="atlas-input"
+            :disabled="store.savingUri"
+          />
+          <span class="field-hint">
+            Reemplaza &lt;password&gt; con tu contraseña real. La URI se guarda encriptada.
+          </span>
+        </div>
+
+        <div v-if="atlasError" class="alert-error">{{ atlasError }}</div>
+
+        <div class="modal-actions">
+          <button
+            class="btn btn-primary"
+            :disabled="!atlasUri.trim() || store.savingUri"
+            @click="connectAtlas"
+          >
+            <span v-if="store.savingUri">⏳ Verificando conexión...</span>
+            <span v-else>✅ Conectar y guardar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Header -->
     <div class="playground-header">
       <div>
         <h1 class="page-title">💻 Playground MongoDB</h1>
-        <p class="page-subtitle" v-if="store.sandboxInfo">
-          Base de datos sandbox: <code class="sandbox-name">{{ store.sandboxInfo.sandboxDb }}</code>
+        <p class="page-subtitle" v-if="store.atlasStatus?.connected">
+          <span class="conn-dot conn-ok" />
+          Conectado a:
+          <code class="sandbox-name">{{ store.atlasStatus.dbName }}</code>
+          <button class="btn-change-uri" @click="showChangeUri = true">Cambiar</button>
+        </p>
+        <p class="page-subtitle conn-warn" v-else-if="store.atlasStatus?.configured">
+          <span class="conn-dot conn-err" /> Sin conexión — revisa tu URI de Atlas
+          <button class="btn-change-uri" @click="showChangeUri = true">Reconfigurar</button>
         </p>
       </div>
       <div class="header-actions">
@@ -14,8 +76,39 @@
           <option v-for="n in 13" :key="n" :value="n">Etapa {{ n }}</option>
         </select>
         <button class="btn btn-danger-outline btn-sm" @click="confirmClear">
-          🗑 Limpiar sandbox
+          🗑 Limpiar BD
         </button>
+      </div>
+    </div>
+
+    <!-- Modal cambiar URI -->
+    <div v-if="showChangeUri" class="modal-overlay" @click.self="showChangeUri = false">
+      <div class="modal">
+        <h3>🔗 Cambiar conexión Atlas</h3>
+        <p>URI actual: <code>{{ store.atlasStatus?.dbName }}</code></p>
+        <div class="form-group" style="margin-top:1rem">
+          <label>Nueva URI</label>
+          <input
+            v-model="atlasUri"
+            type="text"
+            placeholder="mongodb+srv://..."
+            class="atlas-input"
+            :disabled="store.savingUri"
+          />
+        </div>
+        <div v-if="atlasError" class="alert-error">{{ atlasError }}</div>
+        <div class="modal-actions" style="margin-top:1rem">
+          <button class="btn btn-outline" @click="showChangeUri = false">Cancelar</button>
+          <button class="btn btn-danger" @click="removeAtlas">🗑 Desconectar</button>
+          <button
+            class="btn btn-primary"
+            :disabled="!atlasUri.trim() || store.savingUri"
+            @click="connectAtlas"
+          >
+            <span v-if="store.savingUri">Verificando...</span>
+            <span v-else>Guardar nueva URI</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -223,33 +316,61 @@ definePageMeta({ layout: 'default', middleware: 'auth' })
 const store = usePlaygroundStore()
 const selectedStage = ref(1)
 const showClearModal = ref(false)
+const showChangeUri = ref(false)
+const atlasUri = ref('')
+const atlasError = ref('')
+
+/** Muestra el modal de setup si Atlas no está configurado */
+const showAtlasSetup = computed(
+  () => store.atlasStatus !== null && !store.atlasStatus.configured,
+)
 
 const runQuery = () => store.execute(selectedStage.value)
-
 const loadSnippets = () => store.fetchSnippets(selectedStage.value)
 
 const formatJson = (obj: any): string => {
-  try {
-    return JSON.stringify(obj, null, 2)
-  } catch {
-    return String(obj)
-  }
+  try { return JSON.stringify(obj, null, 2) } catch { return String(obj) }
 }
 
 const confirmClear = () => { showClearModal.value = true }
-
 const doClear = async () => {
   await store.clearSandbox()
   showClearModal.value = false
 }
 
+const connectAtlas = async () => {
+  atlasError.value = ''
+  try {
+    await store.saveAtlasUri(atlasUri.value.trim())
+    atlasUri.value = ''
+    showChangeUri.value = false
+    // Recargar colecciones con la nueva conexión
+    await Promise.all([store.fetchCollections(), store.fetchHistory()])
+  } catch (err: any) {
+    atlasError.value = err?.data?.message || store.error || 'Error al conectar'
+  }
+}
+
+const removeAtlas = async () => {
+  await store.removeAtlasUri()
+  showChangeUri.value = false
+  atlasUri.value = ''
+}
+
 onMounted(async () => {
-  await Promise.all([
-    store.fetchSandboxInfo(),
-    store.fetchCollections(),
-    store.fetchHistory(),
-    store.fetchSnippets(selectedStage.value),
-  ])
+  await store.checkAtlasStatus()
+
+  // Solo cargar datos del playground si Atlas está configurado
+  if (store.atlasStatus?.configured) {
+    await Promise.all([
+      store.fetchCollections(),
+      store.fetchHistory(),
+      store.fetchSnippets(selectedStage.value),
+    ])
+  } else {
+    // Cargar snippets siempre (no requieren conexión)
+    await store.fetchSnippets(selectedStage.value)
+  }
 })
 </script>
 
@@ -622,5 +743,132 @@ onMounted(async () => {
 
 @media (max-width: 1100px) {
   .playground-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Indicador de conexión ── */
+.conn-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+}
+.conn-ok  { background: var(--color-success); }
+.conn-err { background: var(--color-danger); }
+.conn-warn { color: var(--color-danger); }
+
+.btn-change-uri {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* ── Modal Atlas setup ── */
+.atlas-modal {
+  max-width: 540px;
+}
+
+.atlas-modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.atlas-icon { font-size: 2.5rem; }
+
+.atlas-modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.atlas-modal-header p {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.atlas-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  background: #f8fafc;
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.atlas-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.step-num {
+  background: var(--color-primary);
+  color: white;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.atlas-step code {
+  background: #e2e8f0;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+
+.atlas-input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  outline: none;
+  transition: border-color .15s;
+}
+.atlas-input:focus { border-color: var(--color-primary); }
+.atlas-input:disabled { background: #f8fafc; }
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.alert-error {
+  background: #fef2f2;
+  color: var(--color-danger);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
 }
 </style>
