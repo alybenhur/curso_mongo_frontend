@@ -6,7 +6,7 @@
           <span class="brand-icon">🍃</span>
           <span class="brand-name">MongoTutor</span>
         </div>
-        <h1 class="sidebar-title">Domina MongoDB desde cero</h1>
+        <h1 class="sidebar-title" style="color:#ffffff">Domina MongoDB desde cero</h1>
         <p class="sidebar-subtitle">
           Aprende bases de datos NoSQL con ejercicios reales, playground interactivo
           y seguimiento inteligente de tu progreso.
@@ -59,7 +59,7 @@
   font-weight: 800;
   line-height: 1.2;
   margin-bottom: 1rem;
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
 .sidebar-subtitle {

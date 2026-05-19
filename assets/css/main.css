@@ -47,6 +47,15 @@ h1,h2,h3,h4,h5,h6 {
   color: var(--color-secondary);
 }
 
+/* Headings dentro de fondos oscuros (sidebar auth, navbar, etc.) */
+.auth-sidebar h1,
+.auth-sidebar h2,
+.auth-sidebar h3,
+.navbar h1,
+.navbar h2 {
+  color: #ffffff;
+}
+
 a {
   color: var(--color-primary);
   text-decoration: none;
