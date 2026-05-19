@@ -254,8 +254,13 @@ async function finish() {
   }
 }
 
-// Si ya completó el diagnóstico, redirigir al dashboard
+// Si ya completó el diagnóstico o es profesor/admin, redirigir
 onMounted(() => {
+  const role = authStore.user?.role
+  if (role === 'professor' || role === 'admin') {
+    router.push('/profesor')
+    return
+  }
   if (authStore.user?.diagnosticCompleted) {
     router.push('/dashboard')
   }

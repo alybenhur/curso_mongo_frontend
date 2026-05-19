@@ -32,8 +32,8 @@
       </div>
     </div>
 
-    <!-- Aviso diagnóstico pendiente -->
-    <div v-if="!authStore.user?.diagnosticCompleted" class="alert-banner">
+    <!-- Aviso diagnóstico pendiente (solo para estudiantes) -->
+    <div v-if="authStore.isStudent && !authStore.user?.diagnosticCompleted" class="alert-banner">
       <span>🎯</span>
       <div>
         <strong>Completa tu diagnóstico inicial</strong>

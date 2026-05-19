@@ -65,17 +65,14 @@ const showPassword = ref(false)
 const loading = ref(false)
 const error = ref('')
 
+const { redirectHome } = useRoleRedirect()
+
 const handleLogin = async () => {
   error.value = ''
   loading.value = true
   try {
     await authStore.login(form.email, form.password)
-    // Si no completó diagnóstico, redirigir al diagnóstico
-    if (!authStore.user?.diagnosticCompleted) {
-      await router.push('/dashboard/diagnostic')
-    } else {
-      await router.push('/dashboard')
-    }
+    await redirectHome()   // → /profesor, /dashboard o /dashboard/diagnostic según rol
   } catch (err: any) {
     error.value = err?.data?.message || authStore.error || 'Error al iniciar sesión'
   } finally {

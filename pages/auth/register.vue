@@ -86,12 +86,13 @@
 definePageMeta({ layout: 'auth', middleware: 'guest' })
 
 const authStore = useAuthStore()
-const router = useRouter()
 
 const form = reactive({ name: '', email: '', password: '', confirm: '' })
 const showPassword = ref(false)
 const loading = ref(false)
 const error = ref('')
+
+const { redirectHome } = useRoleRedirect()
 
 const passwordMismatch = computed(
   () => form.confirm.length > 0 && form.password !== form.confirm
@@ -103,8 +104,7 @@ const handleRegister = async () => {
   loading.value = true
   try {
     await authStore.register(form.name, form.email, form.password)
-    // Nuevo usuario siempre va al diagnóstico
-    await router.push('/dashboard/diagnostic')
+    await redirectHome()   // → /profesor, /dashboard o /dashboard/diagnostic según rol
   } catch (err: any) {
     error.value = err?.data?.message || authStore.error || 'Error al registrarse'
   } finally {
