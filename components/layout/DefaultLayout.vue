@@ -13,6 +13,14 @@
         <NuxtLink to="/curriculum" class="nav-link">Currículo</NuxtLink>
         <NuxtLink to="/playground" class="nav-link">Playground</NuxtLink>
         <NuxtLink to="/achievements" class="nav-link">Logros</NuxtLink>
+        <!-- Enlace al panel del profesor (visible para professor y admin) -->
+        <NuxtLink
+          v-if="authStore.user?.role === 'professor' || authStore.isAdmin"
+          to="/profesor"
+          class="nav-link nav-link--profesor"
+        >
+          👨‍🏫 Profesor
+        </NuxtLink>
         <NuxtLink v-if="authStore.isAdmin" to="/admin" class="nav-link nav-link--admin">
           Admin
         </NuxtLink>
@@ -124,6 +132,10 @@ onMounted(() => {
 
 .nav-link--admin {
   color: var(--color-accent);
+}
+
+.nav-link--profesor {
+  color: #86efac;
 }
 
 .navbar-user {

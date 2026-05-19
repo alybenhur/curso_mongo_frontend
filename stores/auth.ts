@@ -4,7 +4,7 @@ interface User {
   _id: string
   name: string
   email: string
-  role: 'student' | 'admin'
+  role: 'student' | 'professor' | 'admin'
   level: string
   xp: number
   streak: number
@@ -32,6 +32,7 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.accessToken && !!state.user,
     isAdmin: (state) => state.user?.role === 'admin',
+    isProfessor: (state) => state.user?.role === 'professor' || state.user?.role === 'admin',
     isStudent: (state) => state.user?.role === 'student',
     needsDiagnostic: (state) => state.user && !state.user.diagnosticCompleted,
   },
