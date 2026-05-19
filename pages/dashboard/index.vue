@@ -70,6 +70,17 @@
 definePageMeta({ layout: 'default', middleware: 'auth' })
 
 const authStore = useAuthStore()
+const router = useRouter()
+
+onMounted(() => {
+  // Los profesores y admins no tienen dashboard de estudiante;
+  // si llegan aquí (ej. clic en el enlace "Dashboard" del navbar),
+  // los devolvemos al panel del profesor.
+  const role = authStore.user?.role
+  if (role === 'professor' || role === 'admin') {
+    router.replace('/profesor')
+  }
+})
 </script>
 
 <style scoped>

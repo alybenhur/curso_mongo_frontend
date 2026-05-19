@@ -9,18 +9,19 @@
       </div>
 
       <nav class="navbar-nav">
+        <!-- Enlace principal del profesor (destacado, siempre primero) -->
+        <template v-if="authStore.user?.role === 'professor' || authStore.isAdmin">
+          <NuxtLink to="/profesor" class="nav-link nav-link--profesor nav-link--profesor-pill">
+            👨‍🏫 Mi Panel
+          </NuxtLink>
+          <span class="nav-divider">|</span>
+        </template>
+
         <NuxtLink to="/dashboard" class="nav-link">Dashboard</NuxtLink>
         <NuxtLink to="/curriculum" class="nav-link">Currículo</NuxtLink>
         <NuxtLink to="/playground" class="nav-link">Playground</NuxtLink>
         <NuxtLink to="/achievements" class="nav-link">Logros</NuxtLink>
-        <!-- Enlace al panel del profesor (visible para professor y admin) -->
-        <NuxtLink
-          v-if="authStore.user?.role === 'professor' || authStore.isAdmin"
-          to="/profesor"
-          class="nav-link nav-link--profesor"
-        >
-          👨‍🏫 Profesor
-        </NuxtLink>
+
         <NuxtLink v-if="authStore.isAdmin" to="/admin" class="nav-link nav-link--admin">
           Admin
         </NuxtLink>
@@ -136,6 +137,25 @@ onMounted(() => {
 
 .nav-link--profesor {
   color: #86efac;
+}
+
+.nav-link--profesor-pill {
+  background: rgba(134, 239, 172, 0.15);
+  border: 1px solid rgba(134, 239, 172, 0.35);
+  font-weight: 700;
+}
+
+.nav-link--profesor-pill:hover,
+.nav-link--profesor-pill.router-link-active {
+  background: rgba(134, 239, 172, 0.28);
+  color: #86efac;
+}
+
+.nav-divider {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 1.1rem;
+  user-select: none;
+  padding: 0 0.1rem;
 }
 
 .navbar-user {
