@@ -59,6 +59,7 @@
   font-weight: 800;
   line-height: 1.2;
   margin-bottom: 1rem;
+  color: #ffffff;
 }
 
 .sidebar-subtitle {
