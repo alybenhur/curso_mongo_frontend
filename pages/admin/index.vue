@@ -37,6 +37,29 @@
           </div>
         </div>
 
+        <!-- Sembrar preguntas de evaluación -->
+        <div class="admin-card">
+          <div class="card-icon">📝</div>
+          <div class="card-body">
+            <h3 class="card-title">Sembrar evaluaciones faltantes</h3>
+            <p class="card-desc">
+              Detecta etapas que no tienen preguntas de evaluación y las siembra
+              desde el banco oficial. Seguro de ejecutar varias veces (solo inserta
+              si la etapa tiene 0 preguntas).
+            </p>
+            <div v-if="seedEvalResult" class="result-msg" :class="seedEvalOk ? 'result-ok' : 'result-err'">
+              {{ seedEvalOk ? '✅' : '❌' }} {{ seedEvalResult }}
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn-action" :disabled="seedingEval" @click="seedEvaluations">
+              <span v-if="seedingEval" class="spinner-sm" />
+              <span v-else>📝</span>
+              {{ seedingEval ? 'Sembrando...' : 'Ejecutar seed' }}
+            </button>
+          </div>
+        </div>
+
         <!-- Estadísticas del currículo -->
         <div class="admin-card">
           <div class="card-icon">📊</div>
@@ -100,6 +123,10 @@ const seeding    = ref(false)
 const seedResult = ref('')
 const seedOk     = ref(true)
 
+const seedingEval    = ref(false)
+const seedEvalResult = ref('')
+const seedEvalOk     = ref(true)
+
 const loadingStats   = ref(false)
 const curriculumStats = ref<{ stages: number; lessons: number } | null>(null)
 
@@ -117,6 +144,22 @@ async function seedLessons() {
     seedOk.value     = false
   } finally {
     seeding.value = false
+  }
+}
+
+// ── Sembrar preguntas de evaluación ──────────────────────────────────────────
+async function seedEvaluations() {
+  seedingEval.value    = true
+  seedEvalResult.value = ''
+  try {
+    const res = await apiFetch<{ message: string }>('/evaluation/admin/seed-questions', { method: 'POST' })
+    seedEvalResult.value = res.message
+    seedEvalOk.value     = true
+  } catch (e: any) {
+    seedEvalResult.value = e?.data?.message || 'No se pudo ejecutar el seed'
+    seedEvalOk.value     = false
+  } finally {
+    seedingEval.value = false
   }
 }
 
