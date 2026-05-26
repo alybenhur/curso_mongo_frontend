@@ -145,6 +145,7 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked'
 import type { Lesson } from '~/stores/progress'
 
 definePageMeta({ layout: 'default', middleware: 'auth' })
@@ -180,26 +181,9 @@ const nextLesson = computed(() => {
 })
 
 const renderedContent = computed(() => {
-  if (!activeLesson.value) return ''
-  return simpleMarkdown(activeLesson.value.content)
+  if (!activeLesson.value?.content) return ''
+  return marked.parse(activeLesson.value.content) as string
 })
-
-function simpleMarkdown(md: string): string {
-  return md
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/```[\w]*\n([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-    .replace(/\| (.+) \|/g, (m) => {
-      const cells = m.split('|').filter(Boolean).map((c) => `<td>${c.trim()}</td>`).join('')
-      return `<tr>${cells}</tr>`
-    })
-    .replace(/(<tr>.*<\/tr>\n?)+/gs, (t) => `<table>${t}</table>`)
-    .replace(/✅|❌|🔍|⚡/g, (e) => `<span>${e}</span>`)
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/^(?!<[h|t|p|u|o])(.+)$/gm, (l) => l ? `<p>${l}</p>` : '')
-}
 
 function isLessonCompleted(lessonId: string): boolean {
   return stageProgress.value?.completedLessons?.includes(lessonId) ?? false
@@ -406,14 +390,23 @@ onMounted(async () => {
 }
 
 .lesson-body :deep(h2) { font-size: 1.3rem; font-weight: 700; margin: 1.5rem 0 0.75rem; color: var(--color-secondary); }
-.lesson-body :deep(h3) { font-size: 1.1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
-.lesson-body :deep(code) { background: #f1f5f9; padding: .1rem .4rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.87em; }
-.lesson-body :deep(pre) { background: var(--color-secondary); color: #e2e8f0; padding: 1.25rem; border-radius: var(--radius); overflow-x: auto; margin: 1rem 0; }
-.lesson-body :deep(pre code) { background: none; color: inherit; padding: 0; }
-.lesson-body :deep(table) { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.875rem; }
-.lesson-body :deep(td) { border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; }
-.lesson-body :deep(tr:first-child td) { background: #f8fafc; font-weight: 600; }
+.lesson-body :deep(h3) { font-size: 1.1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--color-secondary); }
+.lesson-body :deep(h4) { font-size: 1rem; font-weight: 600; margin: 1rem 0 0.4rem; }
 .lesson-body :deep(p) { margin: 0.75rem 0; }
+.lesson-body :deep(strong) { font-weight: 700; color: var(--color-secondary); }
+.lesson-body :deep(em) { font-style: italic; }
+.lesson-body :deep(code) { background: #f1f5f9; padding: .15rem .45rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.87em; color: #c7254e; }
+.lesson-body :deep(pre) { background: var(--color-secondary); color: #e2e8f0; padding: 1.25rem; border-radius: var(--radius); overflow-x: auto; margin: 1rem 0; }
+.lesson-body :deep(pre code) { background: none; color: inherit; padding: 0; font-size: 0.85em; line-height: 1.6; }
+.lesson-body :deep(blockquote) { border-left: 4px solid var(--color-primary); padding: 0.5rem 1rem; margin: 1rem 0; background: #f0fdf4; color: var(--color-text-muted); border-radius: 0 var(--radius) var(--radius) 0; }
+.lesson-body :deep(ul) { list-style: disc; padding-left: 1.5rem; margin: 0.75rem 0; }
+.lesson-body :deep(ol) { list-style: decimal; padding-left: 1.5rem; margin: 0.75rem 0; }
+.lesson-body :deep(li) { margin: 0.3rem 0; line-height: 1.6; }
+.lesson-body :deep(hr) { border: none; border-top: 1.5px solid var(--color-border); margin: 1.5rem 0; }
+.lesson-body :deep(table) { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.875rem; }
+.lesson-body :deep(th) { background: #f8fafc; font-weight: 700; border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; text-align: left; color: var(--color-secondary); }
+.lesson-body :deep(td) { border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; }
+.lesson-body :deep(tr:nth-child(even) td) { background: #fafafa; }
 
 .code-block {
   margin-top: 1.5rem;

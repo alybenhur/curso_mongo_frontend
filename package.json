@@ -15,6 +15,7 @@
     "@vueuse/core": "^14.3.0",
     "@vueuse/nuxt": "^14.3.0",
     "chart.js": "^4.5.1",
+    "marked": "^18.0.4",
     "monaco-editor": "^0.55.1",
     "nuxt": "^4.4.5",
     "pinia": "^3.0.4",

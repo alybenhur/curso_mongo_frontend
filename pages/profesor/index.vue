@@ -277,7 +277,8 @@ function openStudent(id: string) {
 .page-title { font-size: 1.75rem; font-weight: 800; color: var(--color-secondary); }
 .page-subtitle { color: var(--color-text-muted); margin-top: .25rem; font-size: .9rem; }
 
-.header-stats { display: flex; gap: 1rem; flex-wrap: wrap; }
+.header-stats { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+
 .hstat {
   display: flex; flex-direction: column; align-items: center;
   background: white; padding: .85rem 1.4rem; border-radius: var(--radius);
